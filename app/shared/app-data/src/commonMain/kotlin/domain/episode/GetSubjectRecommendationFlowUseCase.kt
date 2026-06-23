@@ -53,7 +53,9 @@ class GetSubjectRecommendationUseCaseImpl(
     }
 
     private fun AniSubjectRecommendation.matchesAdFilter(adFilter: AdFilterSettings): Boolean {
-        if (adFilter.filterBySubjectId && (subjectId == null || subjectId <= 0)) return false
+        val rawId = subjectId ?: return false
+        val id = rawId.toInt()
+        if (adFilter.filterBySubjectId && id <= 0) return false
         if (adFilter.filterByEmptyName && subjectName.isBlank()) return false
         if (adFilter.filterByDesc2 && desc2.contains("广告")) return false
         if (adFilter.filterByAdImage && imageUrl.contains("/ad-images/")) return false

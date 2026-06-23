@@ -78,11 +78,12 @@ class RecommendationRepository(
     private fun AniSubjectRecommendation.toRecommendedSubjectInfo(
         adFilter: AdFilterSettings,
     ): RecommendedSubjectInfo? {
-        if (adFilter.filterBySubjectId && (subjectId == null || subjectId <= 0)) return null
+        val rawId = subjectId ?: return null
+        val id = rawId.toInt()
+        if (adFilter.filterBySubjectId && id <= 0) return null
         if (adFilter.filterByEmptyName && subjectName.isBlank()) return null
         if (adFilter.filterByDesc2 && desc2.contains("广告")) return null
         if (adFilter.filterByAdImage && imageUrl.contains("/ad-images/")) return null
-        val id = subjectId?.takeIf { it > 0 }?.toInt() ?: return null
         return RecommendedSubjectInfo(
             bangumiId = id,
             nameCn = subjectNameCn.ifEmpty { subjectName },
