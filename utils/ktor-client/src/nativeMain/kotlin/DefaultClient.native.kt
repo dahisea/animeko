@@ -9,6 +9,7 @@
 
 package me.him188.ani.utils.ktor
 
+import io.ktor.client.HttpClientConfig
 import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
 import io.ktor.serialization.ContentConverter
@@ -19,6 +20,10 @@ import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.charsets.decode
 import me.him188.ani.utils.xml.Document
 import me.him188.ani.utils.xml.Xml
+
+actual fun HttpClientConfig<*>.platformDisableSslVerification() {
+    // no-op on non-JVM platforms
+}
 
 internal actual fun getXmlConverter(): ContentConverter {
     return XmlConverter

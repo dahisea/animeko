@@ -11,6 +11,7 @@ data class DebugSettings(
     val enabled: Boolean = false,
     val showAllEpisodes: Boolean = false,
     val showControllerAlwaysOnRequesters: Boolean = false,
+    val disableSslVerification: Boolean = false,
     @Suppress("PropertyName") @Transient val _placeHolder: Int = 0,
 ) {
     companion object {

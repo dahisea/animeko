@@ -172,6 +172,7 @@ private fun KoinApplication.otherModules(getContext: () -> Context, coroutineSco
         val sessionManager by inject<SessionManager>()
         DefaultHttpClientProvider(
             get(), coroutineScope,
+            disableSslVerification = settingsRepository.debugSettings.flow.map { it.disableSslVerification },
             featureHandlers = listOf(
                 UserAgentFeatureHandler,
                 UseAniTokenFeatureHandler(

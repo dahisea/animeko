@@ -110,6 +110,16 @@ fun DebugTab(
                 Text("isMetered: $isMetered")
             }
         }
+        Group(title = { Text("Network") }, useThinHeader = true) {
+            SwitchItem(
+                checked = debugSettings.disableSslVerification,
+                onCheckedChange = { checked ->
+                    debugSettingsState.update(debugSettings.copy(disableSslVerification = checked))
+                },
+                title = { Text("Disable SSL verification") },
+                description = { Text("Allow HTTPS packet capture (applies to new connections)") },
+            )
+        }
         Group(title = { Text(stringResource(Lang.settings_debug_onboarding)) }, useThinHeader = true) {
             TextItem(
                 onClick = {

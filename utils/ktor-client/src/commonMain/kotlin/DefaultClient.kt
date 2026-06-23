@@ -43,11 +43,21 @@ import kotlin.time.measureTimedValue
 expect fun getPlatformKtorEngine(): HttpClientEngineFactory<*>
 
 /**
+ * 禁用 SSL 证书验证 (用于 https 抓包等调试场景).
+ * 仅在 [createDefaultHttpClient] 的配置块内调用有效.
+ */
+expect fun HttpClientConfig<*>.platformDisableSslVerification()
+
+/**
  * Note: 尽可能使用 `HttpClientProvider` 来共享 [HttpClient] 实例. 因为每个实例都潜在地会有一个线程池.
  */
 fun createDefaultHttpClient(
+    disableSslVerification: Boolean = false,
     clientConfig: HttpClientConfig<*>.() -> Unit = {},
 ): HttpClient = HttpClient(getPlatformKtorEngine()) {
+    if (disableSslVerification) {
+        platformDisableSslVerification()
+    }
     install(HttpRequestRetry) {
         maxRetries = 1
         delayMillis { 1000 }

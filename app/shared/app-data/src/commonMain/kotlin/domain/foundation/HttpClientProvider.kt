@@ -23,6 +23,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
@@ -120,12 +121,14 @@ fun HttpClientProvider.get(
 class DefaultHttpClientProvider(
     private val proxyProvider: ProxyProvider,
     private val backgroundScope: CoroutineScope,
+    private val disableSslVerification: Flow<Boolean> = MutableStateFlow(false),
     featureHandlers: List<ScopedHttpClientFeatureHandler<*>> = listOf(UserAgentFeatureHandler),
 ) : HttpClientProvider() {
     // must have stable `equals`
     private data class Matrix(
         val features: Set<ScopedHttpClientFeatureKeyValue<*>>, // map value type is union of the feature's value type and NOT_REQUESTED 
         val proxyConfig: ProxyConfig?,
+        val disableSslVerification: Boolean,
     )
 
     data class HoldingInstanceMatrix(
@@ -139,7 +142,7 @@ class DefaultHttpClientProvider(
     private val clientLogger = logger<HttpClientProvider>()
 
     private val pool = ReuseObjectPool<Matrix, HttpClient>(
-        newInstance = { createClient(it.features, it.proxyConfig) },
+        newInstance = { createClient(it.features, it.proxyConfig, it.disableSslVerification) },
         onRelease = { it.close() },
     )
 
@@ -150,7 +153,11 @@ class DefaultHttpClientProvider(
      * 当前的代理配置, 只会在 [startProxyListening] 里赋值.
      */
     private val currentProxyConfig = MutableStateFlow<ProxyConfig?>(null)
-    override val configurationFlow: Flow<*> get() = currentProxyConfig
+    private val currentDisableSslVerification = MutableStateFlow(false)
+
+    override val configurationFlow: Flow<*> = combine(
+        currentProxyConfig, currentDisableSslVerification,
+    ) { _, _ -> Unit }
 
     @TestOnly
     fun getProxyListeningStarted(): Boolean = proxyListeningStarted.value
@@ -161,8 +168,9 @@ class DefaultHttpClientProvider(
     private fun createClient(
         features: Set<ScopedHttpClientFeatureKeyValue<*>>,
         proxyConfig: ProxyConfig?,
+        disableSslVerification: Boolean,
     ): HttpClient {
-        return createDefaultHttpClient {
+        return createDefaultHttpClient(disableSslVerification = disableSslVerification) {
             for (feature in features) {
                 val handler = featureHandlers[feature.key]
                     ?: error("No handler for feature ${feature.key}")
@@ -231,6 +239,11 @@ class DefaultHttpClientProvider(
                     }
                 }
             }
+            flowScope.launch {
+                disableSslVerification.collectLatest {
+                    currentDisableSslVerification.value = it
+                }
+            }
             firstValueReady.await()
         } catch (e: Throwable) {
             // In the very unlikely case of an exception, we cancel the scope to avoid memory leak.
@@ -261,7 +274,7 @@ class DefaultHttpClientProvider(
     ) : ScopedHttpClient() {
         @UnsafeScopedHttpClientApi
         override fun borrow(): Ticket {
-            val myMatrix = Matrix(features, currentProxyConfig.value)
+            val myMatrix = Matrix(features, currentProxyConfig.value, currentDisableSslVerification.value)
             return TicketImpl(myMatrix, pool.borrow(myMatrix))
         }
 

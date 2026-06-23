@@ -9,9 +9,11 @@
 
 package me.him188.ani.utils.ktor
 
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.engine.okhttp.OkHttpConfig
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
@@ -23,8 +25,31 @@ import io.ktor.utils.io.jvm.javaio.toInputStream
 import io.ktor.utils.io.streams.asInput
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 actual fun getPlatformKtorEngine(): HttpClientEngineFactory<*> = OkHttp
+
+@Suppress("UNCHECKED_CAST")
+actual fun HttpClientConfig<*>.platformDisableSslVerification() {
+    (this as HttpClientConfig<OkHttpConfig>).engine {
+        val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        })
+        val sslContext = SSLContext.getInstance("TLS").apply {
+            init(null, trustAllCerts, SecureRandom())
+        }
+        config {
+            sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+            hostnameVerifier { _, _ -> true }
+        }
+    }
+}
 
 suspend inline fun HttpResponse.bodyAsDocument(): Document = body()
 
