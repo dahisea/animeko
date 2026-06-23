@@ -9,7 +9,10 @@
 
 package me.him188.ani.app.domain.episode
 
+import kotlinx.coroutines.flow.first
+import me.him188.ani.app.data.models.preference.AdFilterSettings
 import me.him188.ani.app.data.network.SubjectService
+import me.him188.ani.app.data.repository.user.SettingsRepository
 import me.him188.ani.app.domain.usecase.UseCase
 import me.him188.ani.utils.platform.Uuid
 
@@ -30,9 +33,13 @@ fun interface GetSubjectRecommendationUseCase : UseCase {
     suspend operator fun invoke(subjectId: Int): List<SubjectRecommendation>
 }
 
-class GetSubjectRecommendationUseCaseImpl(private val service: SubjectService) : GetSubjectRecommendationUseCase {
+class GetSubjectRecommendationUseCaseImpl(
+    private val service: SubjectService,
+    private val settingsRepository: SettingsRepository,
+) : GetSubjectRecommendationUseCase {
     override suspend fun invoke(subjectId: Int): List<SubjectRecommendation> {
-        return service.getSubjectRecommendations(subjectId, 15).map {
+        val adFilter = settingsRepository.themeSettings.flow.first().adFilter
+        return service.getSubjectRecommendations(subjectId, 15).filter { it.matchesAdFilter(adFilter) }.map {
             SubjectRecommendation(
                 subjectId = it.subjectId,
                 name = it.subjectName,
@@ -44,4 +51,14 @@ class GetSubjectRecommendationUseCaseImpl(private val service: SubjectService) :
             )
         }
     }
+
+    private fun AniSubjectRecommendation.matchesAdFilter(adFilter: AdFilterSettings): Boolean {
+        if (adFilter.filterBySubjectId && (subjectId == null || subjectId <= 0)) return false
+        if (adFilter.filterByEmptyName && subjectName.isBlank()) return false
+        if (adFilter.filterByDesc2 && desc2.contains("广告")) return false
+        if (adFilter.filterByAdImage && imageUrl.contains("/ad-images/")) return false
+        return true
+    }
 }
+
+private typealias AniSubjectRecommendation = me.him188.ani.client.models.AniSubjectRecommendation

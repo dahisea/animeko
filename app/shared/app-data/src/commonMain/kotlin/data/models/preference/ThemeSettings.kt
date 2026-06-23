@@ -31,6 +31,7 @@ data class ThemeSettings(
     val alwaysDarkInEpisodePage: Boolean = false,
     val useDynamicSubjectPageTheme: Boolean = false,
     val seedColorValue: ULong = DefaultSeedColor.value,
+    val adFilter: AdFilterSettings = AdFilterSettings.Default,
     @Suppress("PropertyName") @Transient val _placeholder: Int = 0,
 ) {
     @Transient

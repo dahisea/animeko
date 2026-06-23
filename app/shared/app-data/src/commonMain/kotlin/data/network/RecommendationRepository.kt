@@ -16,11 +16,14 @@ import androidx.paging.PagingState
 import io.ktor.client.call.body
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import me.him188.ani.app.data.models.preference.AdFilterSettings
 import me.him188.ani.app.data.models.recommend.RecommendedItemInfo
 import me.him188.ani.app.data.models.recommend.RecommendedSubjectInfo
 import me.him188.ani.app.data.repository.Repository
 import me.him188.ani.app.data.repository.runWrappingExceptionAsLoadResult
+import me.him188.ani.app.data.repository.user.SettingsRepository
 import me.him188.ani.client.apis.HomeAniApi
 import me.him188.ani.client.models.AniSubjectRecommendation
 import me.him188.ani.utils.coroutines.IO_
@@ -30,6 +33,7 @@ import kotlin.coroutines.CoroutineContext
 
 class RecommendationRepository(
     private val homeApi: ApiInvoker<HomeAniApi>,
+    private val settingsRepository: SettingsRepository,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_
 ) : Repository() {
     fun recommendedSubjectsPager(): Flow<PagingData<RecommendedItemInfo>> {
@@ -44,6 +48,7 @@ class RecommendationRepository(
         override suspend fun load(params: LoadParams<Int>): LoadResult<Int, RecommendedItemInfo> {
             val offset = params.key ?: 0
             val loadSize = params.loadSize
+            val adFilter = settingsRepository.themeSettings.flow.first().adFilter
             return runWrappingExceptionAsLoadResult {
                 val response = withContext(ioDispatcher) {
                     homeApi {
@@ -53,7 +58,9 @@ class RecommendationRepository(
                         ).body()
                     }
                 }
-                val list: List<RecommendedItemInfo> = response.items.mapNotNull { it.toRecommendedSubjectInfo() }
+                val list: List<RecommendedItemInfo> = response.items.mapNotNull {
+                    it.toRecommendedSubjectInfo(adFilter)
+                }
 
                 LoadResult.Page(
                     list,
@@ -68,7 +75,13 @@ class RecommendationRepository(
         }
     }
 
-    private fun AniSubjectRecommendation.toRecommendedSubjectInfo(): RecommendedSubjectInfo? {
+    private fun AniSubjectRecommendation.toRecommendedSubjectInfo(
+        adFilter: AdFilterSettings,
+    ): RecommendedSubjectInfo? {
+        if (adFilter.filterBySubjectId && (subjectId == null || subjectId <= 0)) return null
+        if (adFilter.filterByEmptyName && subjectName.isBlank()) return null
+        if (adFilter.filterByDesc2 && desc2.contains("广告")) return null
+        if (adFilter.filterByAdImage && imageUrl.contains("/ad-images/")) return null
         val id = subjectId?.takeIf { it > 0 }?.toInt() ?: return null
         return RecommendedSubjectInfo(
             bangumiId = id,
