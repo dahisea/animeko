@@ -95,42 +95,6 @@ fun SettingsScope.ThemeGroup(
         )
     }
 
-    val adFilter = themeSettings.adFilter
-    Group(title = { Text("Ad Filter") }) {
-        SwitchItem(
-            checked = adFilter.filterBySubjectId,
-            onCheckedChange = { checked ->
-                state.update(themeSettings.copy(adFilter = adFilter.copy(filterBySubjectId = checked)))
-            },
-            title = { Text("Filter by invalid subjectId") },
-            description = { Text("Remove items with subjectId = -1 (ad marker)") },
-        )
-        SwitchItem(
-            checked = adFilter.filterByEmptyName,
-            onCheckedChange = { checked ->
-                state.update(themeSettings.copy(adFilter = adFilter.copy(filterByEmptyName = checked)))
-            },
-            title = { Text("Filter by empty name") },
-            description = { Text("Remove items with blank subject name") },
-        )
-        SwitchItem(
-            checked = adFilter.filterByDesc2,
-            onCheckedChange = { checked ->
-                state.update(themeSettings.copy(adFilter = adFilter.copy(filterByDesc2 = checked)))
-            },
-            title = { Text("Filter by ad label") },
-            description = { Text("Remove items with '广告' in description") },
-        )
-        SwitchItem(
-            checked = adFilter.filterByAdImage,
-            onCheckedChange = { checked ->
-                state.update(themeSettings.copy(adFilter = adFilter.copy(filterByAdImage = checked)))
-            },
-            title = { Text("Filter by ad image path") },
-            description = { Text("Remove items with /ad-images/ in image URL") },
-        )
-    }
-
     Box(
         modifier = Modifier.alpha(if (themeSettings.useDynamicTheme) 0.5f else 1f),
     ) {

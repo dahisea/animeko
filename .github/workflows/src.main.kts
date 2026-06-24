@@ -486,25 +486,14 @@ run {
     )
 
     buildMatrixInstances = listOf(
-//        selfWin10,
         ghWin,
         ghUbuntu2404,
         ghMac15Intel,
-        selfMac15.copy(
-            // 即使自己机器上传的 dmg 安装时会有问题 (#1479), 也在 build 时使用它, 避免使用太多 GitHub 机器占用并行.
-            // 发版时还是使用 GitHub
-            uploadDesktopInstallers = true,
-        ),
+        ghMac15AppleSilicon,
     )
 
     releaseMatrixInstances = listOf(
         ghWin, // win installer
-        selfMac15.copy(
-            buildAllAndroidAbis = true,
-            uploadApk = false,
-            uploadDesktopInstallers = false,
-            extraGradleArgs = selfMac15.extraGradleArgs.filterNot { it.startsWith("-P$ANI_ANDROID_ABIS=") },
-        ), // android apks
         ghMac15AppleSilicon, // macos AArch64 installer
         ghMac15Intel, // macos x64 portable
         ghUbuntu2404, // linux app image + Android APKs
@@ -837,7 +826,6 @@ workflow(
     }.let { it.singleOrNull() ?: error("List contain multiple elements: $it") }
         .let { (_, build) ->
             listOf(
-                Runner.SelfHostedMacOS15,
                 Runner.GithubMacOS14,
                 Runner.GithubMacOS15AppleSilicon,
             ).forEach { runner ->

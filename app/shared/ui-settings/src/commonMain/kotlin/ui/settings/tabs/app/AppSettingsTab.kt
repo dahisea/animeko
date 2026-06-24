@@ -152,7 +152,7 @@ fun AppSettingsTab(
 ) {
     SettingsTab(modifier) {
         SoftwareUpdateGroup(softwareUpdateGroupState)
-        AppearanceGroup(uiSettings)
+        AppearanceGroup(uiSettings, themeSettings)
         ThemeGroup(themeSettings)
         PlayerGroup(
             videoScaffoldConfig,
@@ -167,6 +167,7 @@ fun AppSettingsTab(
 @Composable
 fun SettingsScope.AppearanceGroup(
     state: SettingsState<UISettings>,
+    themeState: SettingsState<ThemeSettings>,
 ) {
     val uiSettings by state
 
@@ -267,6 +268,43 @@ fun SettingsScope.AppearanceGroup(
             },
             title = { Text(stringResource(Lang.settings_app_light_up_mode)) },
             description = { Text(stringResource(Lang.settings_app_light_up_mode_description)) },
+        )
+    }
+
+    val themeSettings by themeState
+    val adFilter = themeSettings.adFilter
+    Group(title = { Text("Ad Filter") }, useThinHeader = true) {
+        SwitchItem(
+            checked = adFilter.filterBySubjectId,
+            onCheckedChange = { checked ->
+                themeState.update(themeSettings.copy(adFilter = adFilter.copy(filterBySubjectId = checked)))
+            },
+            title = { Text("Filter by invalid subjectId") },
+            description = { Text("Remove items with subjectId = -1 (ad marker)") },
+        )
+        SwitchItem(
+            checked = adFilter.filterByEmptyName,
+            onCheckedChange = { checked ->
+                themeState.update(themeSettings.copy(adFilter = adFilter.copy(filterByEmptyName = checked)))
+            },
+            title = { Text("Filter by empty name") },
+            description = { Text("Remove items with blank subject name") },
+        )
+        SwitchItem(
+            checked = adFilter.filterByDesc2,
+            onCheckedChange = { checked ->
+                themeState.update(themeSettings.copy(adFilter = adFilter.copy(filterByDesc2 = checked)))
+            },
+            title = { Text("Filter by ad label") },
+            description = { Text("Remove items with '广告' in description") },
+        )
+        SwitchItem(
+            checked = adFilter.filterByAdImage,
+            onCheckedChange = { checked ->
+                themeState.update(themeSettings.copy(adFilter = adFilter.copy(filterByAdImage = checked)))
+            },
+            title = { Text("Filter by ad image path") },
+            description = { Text("Remove items with /ad-images/ in image URL") },
         )
     }
 }
