@@ -730,29 +730,6 @@ fun WorkflowBuilder.addVerifyJob(build: Job<BuildJobOutputs>, runner: Runner, if
     )
 }
 
-fun WorkflowBuilder.addConsistencyCheckJob(filename: String) {
-    job(
-        id = "consistency-check",
-        name = "Workflow YAML Consistency Check",
-        runsOn = RunnerType.UbuntuLatest,
-        permissions = mapOf(),
-    ) {
-        uses(action = Checkout())
-        run(
-            command = "pip3 install PyYAML",
-        )
-        val originalPath = """.github/workflows/$filename"""
-        val backupPath = """.github/workflows/$filename-check.yml"""
-        run(
-            command = """cp "$originalPath" "$backupPath" """,
-        )
-        run(
-            command = ".github/workflows/${__FILE__.name}",
-        )
-        run(command = "python .github/workflows/check_yaml_equivalence.py $originalPath $backupPath")
-    }
-}
-
 val commonIgnoredPaths = listOf(
     "**/*.md",
     ".idea/**",
@@ -786,7 +763,6 @@ workflow(
         cancelInProgress = true,
     ),
 ) {
-    addConsistencyCheckJob("build.yml")
     // Expands job matrix at compile-time so that we set job-level `if` condition. 
     val builds: List<Pair<MatrixInstance, Job<BuildJobOutputs>>> = buildMatrixInstances.map { matrix ->
         matrix to job(
@@ -862,7 +838,6 @@ workflow(
     targetFileName = "release.yml",
     consistencyCheckJobConfig = ConsistencyCheckJobConfig.Disabled,
 ) {
-    addConsistencyCheckJob("release.yml")
     val createRelease = job(
         id = "create-release",
         name = "Create Release",

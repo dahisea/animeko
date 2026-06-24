@@ -312,7 +312,7 @@ fun SettingsScreen(
                                 onNavigateToBangumiOAuth = onNavigateToBangumiOAuth,
                             )
 
-                            SettingsTab.APPEARANCE -> AppearanceGroup(vm.uiSettings)
+                            SettingsTab.APPEARANCE -> AppearanceGroup(vm.uiSettings, vm.themeSettings)
                             SettingsTab.THEME -> ThemeGroup(vm.themeSettings)
                             SettingsTab.UPDATE -> SoftwareUpdateGroup(vm.softwareUpdateGroupState)
                             SettingsTab.PLAYER -> PlayerGroup(
